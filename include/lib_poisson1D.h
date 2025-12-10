@@ -20,7 +20,7 @@
 void set_GB_operator_colMajor_poisson1D(double* AB, int* lab, int *la, int *kv);
 
 /**
- * Set up the identity operator in General Band (GB) storage format with column-major ordering
+ * Set up the identity operator inDGBMV General Band (GB) storage format with column-major ordering
  * @param AB: Output matrix in GB format (allocated with size lab*la)
  * @param lab: Leading dimension of AB (number of rows in the band storage)
  * @param la: Number of columns in the matrix (problem size)

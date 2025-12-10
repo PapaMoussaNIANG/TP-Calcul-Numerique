@@ -6,7 +6,7 @@ RUN apt-get update -y && \
 WORKDIR /app
 COPY . .
 
-ENV HOSTNAME=ambre
+ENV HOSTNAME=shams
 RUN mkdir bin && \
   make all && \
   make run
