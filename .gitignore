@@ -53,3 +53,11 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+bin
+AB.dat
+EX_SOL.dat
+LU.dat
+RHS.dat
+SOL.dat
+X_grid.dat
