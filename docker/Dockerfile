@@ -7,6 +7,6 @@ WORKDIR /app
 COPY . .
 
 ENV HOSTNAME=shams
-RUN mkdir bin && \
+RUN mkdir -p bin && \
   make all && \
   make run
