@@ -4,24 +4,27 @@
 /* Poisson problem (Heat equation)            */
 /**********************************************/
 #include "lib_poisson1D.h"
-
+#include <string.h>
 void eig_poisson1D(double* eigval, int *la){
   // TODO: Compute all eigenvalues for the 1D Poisson operator
+  for (size_t i = 1; i < *la; ++i)
+  {
+    eigval[i] = 2. - 2. * cos(((double)i * M_PI) / ((double)(*la) + 1.));
+  }
 }
 
 double eigmax_poisson1D(int *la){
   // TODO: Compute and return the maximum eigenvalue for the 1D Poisson operator
-  return 0;
+  return 2. - 2. * cos(((double)(*la) * M_PI) / ((double)(*la) + 1.));
 }
 
 double eigmin_poisson1D(int *la){
   // TODO: Compute and return the minimum eigenvalue for the 1D Poisson operator
-  return 0;
+  return 2. - 2. * cos(M_PI / ((double)(*la) + 1.));
 }
 
 double richardson_alpha_opt(int *la){
-  // TODO: Compute alpha_opt
-  return 0;
+  return 2. / (eigmax_poisson1D(la) + eigmin_poisson1D(la));
 }
 
 /**
@@ -35,6 +38,25 @@ void richardson_alpha(double *AB, double *RHS, double *X, double *alpha_rich, in
   // 2. Update x = x + alpha*r (use daxpy)
   // 3. Check convergence: ||r||_2 < tol (use dnrm2)
   // 4. Store residual norm in resvec and repeat
+  double* r = NULL;
+  const double TOLERANCE = *tol;
+  const int MAX_IT = *maxit;
+  const double RHS_norm = cblas_dnrm2(*la, RHS, 1);
+  r = (double*)malloc(*la * sizeof(double));
+  memcpy(r, RHS, *la  * sizeof(double));
+  cblas_dgbmv(CblasColMajor, CblasNoTrans, *la, *la, *kl, *ku, -1, AB, *lab, X, 1, 1.0, r, 1);
+  resvec[*nbite] = cblas_dnrm2(*la, r, 1) / RHS_norm;
+  ++(*nbite);
+  while(resvec[(*nbite) - 1] > TOLERANCE)
+  {
+    cblas_daxpy(*la, *alpha_rich, r, 1, X, 1);
+    memcpy(r, RHS, *la * sizeof(double));
+    cblas_dgbmv(CblasColMajor, CblasNoTrans, *la, *la, *kl, *ku, -1, AB, *lab, X, 1, 1.0, r, 1);
+    resvec[*nbite] = cblas_dnrm2(*la, r, 1) / RHS_norm;
+    ++(*nbite);
+    if(*nbite ==  MAX_IT)
+      break;
+  }
 }
 
 /**
