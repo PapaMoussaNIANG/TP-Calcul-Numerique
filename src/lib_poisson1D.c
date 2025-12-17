@@ -6,85 +6,81 @@
 #include "lib_poisson1D.h"
 
 void set_GB_operator_colMajor_poisson1D(double* AB, int *lab, int *la, int *kv){
-  // TODO: Fill AB with the tridiagonal Poisson operator
-  for(int j = 0; j < *kv; ++j)
-      AB[j] = 0;
-    
-  AB[(*kv)] = 0;
-  AB[(*kv) + 1] = 2;
-  AB[(*kv) + 2] = -1;
-
-  for (int i = 1; i < *la - 1; ++i)
-  {
-    for(int j = 0; j < *kv; ++j)
-      AB[i * (*lab) + j] = 0;
-    
-    AB[i * (*lab )+ (*kv)] = -1;
-    AB[i * (*lab ) + (*kv) + 1] = 2;
-    AB[i * (*lab ) + (*kv) + 2] = -1;
+  int ii, jj, kk;
+  for (jj=0;jj<(*la);jj++){
+    kk = jj*(*lab);
+    if (*kv>=0){
+      for (ii=0;ii< *kv;ii++){
+	      AB[kk+ii]=0.0;
+      }
+    }
+    AB[kk+ *kv]=-1.0;
+    AB[kk+ *kv+1]=2.0;
+    AB[kk+ *kv+2]=-1.0;
   }
+  AB[0]=0.0;
+  if (*kv == 1) {AB[1]=0;}
   
-  for(int j = 0; j < *kv; ++j)
-      AB[((*la)-1) * (*lab) + j] = 0;
-    
-  AB[((*la)-1) * (*lab) + (*kv)] = -1;
-  AB[((*la)-1) * (*lab) + (*kv) + 1] = 2;
-  AB[((*la)-1) * (*lab) + (*kv) + 2] = 0;
+  AB[(*lab)*(*la)-1]=0.0;
 }
 
 void set_GB_operator_colMajor_poisson1D_Id(double* AB, int *lab, int *la, int *kv){
-  // TODO: Fill AB with the identity matrix
-  // Only the main diagonal should have 1, all other entries are 0
-
-  for (int i = 1; i < *la; ++i)
-  {
-    for(int j = 0; j < *kv; ++j)
-      AB[i * (*lab) + j] = 0;
-    
-    AB[i * (*lab )+ (*kv)] = 0;
-    AB[i * (*lab ) + (*kv) + 1] = 1;
-    AB[i * (*lab ) + (*kv) + 2] = 0;
+  int ii, jj, kk;
+  for (jj=0;jj<(*la);jj++){
+    kk = jj*(*lab);
+    if (*kv>=0){
+      for (ii=0;ii< *kv;ii++){
+	AB[kk+ii]=0.0;
+      }
+    }
+    AB[kk+ *kv]=0.0;
+    AB[kk+ *kv+1]=1.0;
+    AB[kk+ *kv+2]=0.0;
   }
+  AB[1]=0.0;
+  AB[(*lab)*(*la)-1]=0.0;
 }
 
 void set_dense_RHS_DBC_1D(double* RHS, int* la, double* BC0, double* BC1){
-  // TODO: Compute RHS vector
-  RHS[0] = *BC0;
-  for(int i = 1; i < *la - 1; ++i){
-    RHS[i] = 0;
+  int jj;
+  RHS[0]= *BC0;
+  RHS[(*la)-1]= *BC1;
+  for (jj=1;jj<(*la)-1;jj++){
+    RHS[jj]=0.0;
   }
-  RHS[*la - 1] = *BC1;
 }  
 
 void set_analytical_solution_DBC_1D(double* EX_SOL, double* X, int* la, double* BC0, double* BC1){
-  // TODO: Compute the exact analytical solution at each grid point
-  // This depends on the source term f(x) used in set_dense_RHS_DBC_1D
-  for(int i = 0; i < *la; ++i){
-    EX_SOL[i] = *BC0 + X[i] * (*BC1 - *BC0);
+  int jj;
+  double h, DELTA_T;
+  DELTA_T=(*BC1)-(*BC0);
+  for (jj=0;jj<(*la);jj++){
+    EX_SOL[jj] = (*BC0) + X[jj]*DELTA_T;
   }
 }  
 
 void set_grid_points_1D(double* x, int* la){
-  // TODO: Generate uniformly spaced grid points in [0,1]
-  double h = 1.0f / ((double)*la + 1.0f);
-  for(int i = 0; i < *la; ++i){
-    x[i] = h + (double) i * h;
+  int jj;
+  double h;
+  h=1.0/(1.0*((*la)+1));
+  for (jj=0;jj<(*la);jj++){
+    x[jj]=(jj+1)*h;
   }
 }
 
 double relative_forward_error(double* x, double* y, int* la){
-  // TODO: Compute the relative error using BLAS functions (dnrm2, daxpy or manual loop)
-  double norm_denominator = cblas_dnrm2(*la, x, 1);
-
-  cblas_daxpy(*la, -1, x, 1, y, 1);
-  double norm_numerator = cblas_dnrm2(*la, y, 1);
-
-  return norm_numerator / norm_denominator;
+  double temp, relres;
+  temp = cblas_ddot(*la, x, 1, x,1);
+  temp = sqrt(temp);
+  cblas_daxpy(*la, -1.0, x, 1, y, 1);
+  relres = cblas_ddot(*la, y, 1, y,1);
+  relres = sqrt(relres);
+  relres = relres / temp;
+  return relres;
 }
 
 int indexABCol(int i, int j, int *lab){
-  // TODO: Return the correct index formula for column-major band storage
-  return 0;
+  return j*(*lab)+i;
 }
 
 int dgbtrftridiag(int *la, int*n, int *kl, int *ku, double *AB, int *lab, int *ipiv, int *info){
@@ -96,15 +92,15 @@ int dgbtrftridiag(int *la, int*n, int *kl, int *ku, double *AB, int *lab, int *i
   {
     ipiv[i] = i + 1;
   }
-  for (int i = 1; i < *n; ++i)
+  for (int j = 1; j < *n; ++j)
   {
-    double pivot = AB[(i - 1) * (*lab ) + kv + 1];
+    double pivot = AB[indexABCol(kv + 1, j - 1, lab)];
     if(pivot == 0){
-      *info = i;
+      *info = j;
       return *info;
     }
-    AB[(i - 1) * (*lab ) + kv + 2] = AB[(i - 1) * (*lab ) + kv + 2] / pivot;
-    AB[i * (*lab ) + kv + 1] = AB[i * (*lab ) + kv + 1] - AB[(i - 1) * (*lab ) + kv + 2] * AB[i * (*lab ) + kv];
+    AB[indexABCol(kv + 2, j - 1, lab)] = AB[indexABCol(kv + 2, j - 1, lab)] / pivot;
+    AB[indexABCol(kv + 1, j, lab)] = AB[indexABCol(kv + 1, j, lab)] - AB[indexABCol(kv + 2, j - 1, lab)] * AB[indexABCol(kv, j, lab)];
   }
   return *info;
 }

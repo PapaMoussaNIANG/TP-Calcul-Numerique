@@ -45,11 +45,12 @@ int main(int argc,char *argv[])
   }
 
   /* Problem setup */
-  NRHS=1;           /* Solving Ax=b with one right-hand side */
-  nbpoints=10;      /* Total number of discretization points (including boundaries) */
-  la=nbpoints-2;    /* Number of interior points (excluding boundaries) */
-  T0=-5.0;          /* Dirichlet boundary condition at x=0 */
-  T1=5.0;           /* Dirichlet boundary condition at x=1 */
+  NRHS=1;                             /* Solving Ax=b with one right-hand side */
+  //nbpoints = atoi(getenv("NPOINTS")); /* Total number of discretization points (including boundaries) */
+  nbpoints = 10;                      /* Total number of discretization points (including boundaries) */
+  la=nbpoints-2;                      /* Number of interior points (excluding boundaries) */
+  T0=-5.0;                            /* Dirichlet boundary condition at x=0 */
+  T1=5.0;                             /* Dirichlet boundary condition at x=1 */
 
   printf("--------- Poisson 1D ---------\n\n");
   /* Allocate memory for vectors */
