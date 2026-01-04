@@ -66,6 +66,16 @@ void richardson_alpha(double *AB, double *RHS, double *X, double *alpha_rich, in
 void extract_MB_jacobi_tridiag(double *AB, double *MB, int *lab, int *la,int *ku, int*kl, int *kv){
   // TODO: Extract diagonal elements from AB and store in MB
   // MB should contain only the diagonal of A
+  const int lab_MB = (*kl) + (*kv) + 1;
+  for (int i = 0; i < *la; ++i)
+  {
+    for(int j = 0; j < (*kv); j++)
+    {
+      MB[i * (lab_MB) + j] = 0;
+    }
+    MB[i * lab_MB + (*kv)] = AB[i * (*lab) + 1];;
+    MB[i * lab_MB + (*kv) + 1] = 0;
+  }
 }
 
 /**
@@ -75,6 +85,16 @@ void extract_MB_jacobi_tridiag(double *AB, double *MB, int *lab, int *la,int *ku
 void extract_MB_gauss_seidel_tridiag(double *AB, double *MB, int *lab, int *la,int *ku, int*kl, int *kv){
   // TODO: Extract diagonal and lower diagonal from AB
   // MB should contain the lower triangular part (including diagonal) of A
+  const int lab_MB = (*kl) + (*kv) + 1;
+  for (int i = 0; i < *la; ++i)
+  {
+    for(int j = 0; j < (*kv); j++)
+    {
+      MB[i * (lab_MB) + j] = 0;
+    }
+    MB[i * lab_MB + (*kv)] = AB[i * (*lab) + 1];;
+    MB[i * lab_MB + (*kv) + 1] = AB[i * (*lab) + 2];
+  }
 }
 
 /**
@@ -85,5 +105,32 @@ void extract_MB_gauss_seidel_tridiag(double *AB, double *MB, int *lab, int *la,i
  */
 void richardson_MB(double *AB, double *RHS, double *X, double *MB, int *lab, int *la,int *ku, int*kl, double *tol, int *maxit, double *resvec, int *nbite){
   // TODO: Implement Richardson iterative method
+  double* r = NULL;
+  const double TOLERANCE = *tol;
+  const int MAX_IT = *maxit;
+  const double RHS_norm = cblas_dnrm2(*la, RHS, 1);
+  
+  int info = 0;
+  const int ku_MB = 0;
+  const int NRHS = 1;
+  int* ipiv = (int *) calloc(*la, sizeof(int));  /* Pivot indices for LU factorization */
+  dgbtrf_(la, la, kl, &ku_MB, MB, lab, ipiv, &info);
+
+  r = (double*)malloc(*la * sizeof(double));
+  memcpy(r, RHS, *la  * sizeof(double));
+  cblas_dgbmv(CblasColMajor, CblasNoTrans, *la, *la, *kl, *ku, -1, AB, *lab, X, 1, 1.0, r, 1);
+  resvec[*nbite] = cblas_dnrm2(*la, r, 1) / RHS_norm;
+  ++(*nbite);
+  while(resvec[(*nbite) - 1] > TOLERANCE)
+  {
+    dgbtrs_("N", la, kl, &ku_MB, &NRHS, MB, lab, ipiv, r, la, &info);
+    cblas_daxpy(*la, 1, r, 1, X, 1);
+    memcpy(r, RHS, *la * sizeof(double));
+    cblas_dgbmv(CblasColMajor, CblasNoTrans, *la, *la, *kl, *ku, -1, AB, *lab, X, 1, 1.0, r, 1);
+    resvec[*nbite] = cblas_dnrm2(*la, r, 1) / RHS_norm;
+    ++(*nbite);
+    if(*nbite ==  MAX_IT)
+      break;
+  }
 }
 
